@@ -62,10 +62,16 @@ class SimpleZoomWidget(QWidget):
         return None
 
     def _on_click(self, viewer: napari.Viewer, event) -> None:
+        if viewer.dims.ndisplay != 2:
+            return
+
         if event.button == 2:  # if right click
-            layers = [l for l in viewer.layers if l not in self.crop_layers]
+            world_position = viewer.cursor.position
+            self._clear_crops()
+            self.prev_sibiles.clear()
+            layers = viewer.layers.copy()  # avoiding iterating over increasing list
             for layer in layers:
-                position = layer.world_to_data(viewer.cursor.position)
+                position = layer.world_to_data(world_position)
                 new_layer = self._get_crop(layer, position)
                 if new_layer is not None:
                     self.crop_layers.append(new_layer)
@@ -73,6 +79,11 @@ class SimpleZoomWidget(QWidget):
                 if layer.visible:
                     self.prev_visibles.append(layer)
                 layer.visible = False
+
+    def _clear_crops(self) -> None:
+        for layer in self.crop_layers:
+            self.viewer.layers.remove(layer)
+        self.crop_layers.clear()
 
     def _on_close_crop(self, viewer: napari.Viewer) -> None:
         for layer in self.crop_layers:
