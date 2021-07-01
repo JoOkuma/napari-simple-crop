@@ -19,13 +19,19 @@ class SimpleZoomWidget(QWidget):
         self.layout().addWidget(QLabel('Press Ctrl+A to toggle the visibility of the layers'))
         self.layout().addWidget(QLabel('Press Ctrl+X to close crop.'))
 
-        self.size_spinbox = QSpinBox()
-        self.size_spinbox.setValue(51)
+        self.space_size_spinbox = QSpinBox()
+        self.space_size_spinbox.setValue(51)
+        self.aux_size_spinbox = QSpinBox()
+        self.aux_size_spinbox.setValue(5)
 
         layout = QHBoxLayout()
-        layout.addWidget(QLabel('Crop size:'))
-        layout.addWidget(self.size_spinbox)
+        layout.addWidget(QLabel('Space crop size:'))
+        layout.addWidget(self.space_size_spinbox)
+        self.layout().addLayout(layout)
 
+        layout = QHBoxLayout()
+        layout.addWidget(QLabel('Aux. crop size:'))
+        layout.addWidget(self.aux_size_spinbox)
         self.layout().addLayout(layout)
 
         self.viewer.mouse_drag_callbacks.append(self._on_click)
@@ -37,17 +43,18 @@ class SimpleZoomWidget(QWidget):
 
         if type == 'image' or type == 'labels':
             state['name'] = 'Crop ' + state['name']
-            half_w = self.size_spinbox.value() // 2
 
             slicing = []
             lower_bound = []
             for i, (c, s, d) in enumerate(zip(position, state['scale'], data.shape)):
-                # hack to get 3D volume when viewing 2D
-                if i in self.viewer.dims.order[-min(self.viewer.dims.ndim, 3):]:
-                    l = max(0, int(c - half_w / s))
-                    m = min(d, int(c + half_w / s + 1))
+                # last 3 dimensions use spacial size
+                if i >= self.viewer.dims.ndim - 3:
+                    half_w = self.space_size_spinbox.value() // 2
                 else:
-                    l, m = int(c), int(c + 1)
+                    half_w = self.aux_size_spinbox.value() // 2
+
+                l = max(0, int(c - half_w / s))
+                m = min(d, int(c + half_w / s + 1))
                 lower_bound.append(l)
                 slicing.append(slice(l, m))
 
