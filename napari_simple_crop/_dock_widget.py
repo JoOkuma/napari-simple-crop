@@ -2,7 +2,7 @@ from typing import List, Sequence, Optional
 
 import napari
 import numpy as np
-from napari.layers import Layer, Labels
+from napari.layers import Layer, Labels, Image
 from napari_plugin_engine import napari_hook_implementation
 from qtpy.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QSpinBox, QLabel
 
@@ -68,13 +68,15 @@ class SimpleZoomWidget(QWidget):
         if event.button == 2:  # if right click
             world_position = viewer.cursor.position
             self._clear_crops()
-            self.prev_sibiles.clear()
-            layers = viewer.layers.copy()  # avoiding iterating over increasing list
+            self.prev_visibles.clear()
+            shape = viewer.layers.selection.active.data.shape
+            layers = viewer.layers.copy()
             for layer in layers:
-                position = layer.world_to_data(world_position)
-                new_layer = self._get_crop(layer, position)
-                if new_layer is not None:
-                    self.crop_layers.append(new_layer)
+                if isinstance(layer, (Image, Labels)) and layer.data.shape == shape:
+                    position = layer.world_to_data(world_position)
+                    new_layer = self._get_crop(layer, position)
+                    if new_layer is not None:
+                        self.crop_layers.append(new_layer)
 
                 if layer.visible:
                     self.prev_visibles.append(layer)
